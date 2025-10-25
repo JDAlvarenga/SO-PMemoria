@@ -1,7 +1,195 @@
 ﻿@page "/"
+@inject Services.OptimalMemoryService MemoryService;
 
 <PageTitle>Paginación Memoria</PageTitle>
+<MudGrid>
+    <MudItem xs="12" sm="5" md="3">
+        <MudPaper Class="pa-4">
 
-<h1>Hello, world!</h1>
+            <MudNumericField @bind-Value="_capacity" Label="Capacidad" Min="1" Max="50"/>
 
-Welcome to your new app.
+            <MudNumericField @bind-Value="_pageToAdd" Immediate @onkeydown="OnEnter"
+                             HideSpinButtons="true"
+                             Adornment="Adornment.End"
+                             AdornmentIcon="@Icons.Material.Filled.Add"
+                             IconSize="Size.Large"
+                             OnAdornmentClick="AddRequest"
+                             AdornmentColor="Color.Primary"
+                             Label="Agregar página"
+                             HelperText="Ingrese las páginas a solicitar a memoria"/>
+            <MudChipSet T="int" AllClosable OnClose="ChipClosed">
+                @{
+                    var idx = 0;
+                    foreach (var req in _requestsToLoad)
+                    {
+                        <MudChip Text="@(req.ToString())" Value="@(idx++)"></MudChip>
+                    }
+                }
+            </MudChipSet>
+            
+            <MudButton EndIcon="@Icons.Material.Filled.Start"
+                       OnClick="Load">Iniciar</MudButton>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="7" md="9">
+        <MudPaper Class="pa-4">
+            <MudText Typo="Typo.h4">Siguientes</MudText>
+            <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal" Class="overflow-x-auto">
+                @{
+                    var first = true;
+                    foreach (var step in MemoryService.Requests)
+                    {
+                        <MudTimelineItem Size="@(first ? Size.Medium : Size.Small)"
+                                         Color="@(first ? CurrentColor : Color.Inherit)"
+                                         Variant="Variant.Outlined">
+                            <ItemDot>@step</ItemDot>
+                        </MudTimelineItem>
+                        first = false;
+                    }
+                }
+
+            </MudTimeline>
+            
+            <MudSimpleTable Dense Bordered FixedHeader Style="height: 50vh">
+                <thead>
+                <tr>
+                    <td colspan="3">
+                        <MudToolBar>
+
+                            <MudIconButton OnClick="Advance"
+                                           Icon="@Icons.Material.Filled.SkipNext"
+                                           Color="Color.Primary"
+                                           Size="Size.Large"/>
+                            <MudSpacer/>
+                            <MudText Typo="Typo.caption">Capacidad: @(MemoryService.Capacity)/@(MemoryService.PagesInFrame.Count)</MudText>
+                        </MudToolBar>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td>Página</td>
+                    <td>Marco</td>
+                    <td>Peticiones siguientes</td>
+
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td colspan="3">
+                    <MudText Typo="Typo.caption">En memoria</MudText>
+                </td></tr>
+                @foreach (var inMemoryPage in MemoryService.PagesInFrame)
+                {
+                    <tr>
+                        <td>
+                            @*Highlight page if its the same as the previous or current request*@
+                            <MudChip T="int"
+                                     Color="@(inMemoryPage.Key == MemoryService.Requests.FirstOrDefault(-1) ? CurrentColor : inMemoryPage.Key == _previousPage ? PreviousColor : Color.Inherit)"
+                                     Variant="Variant.Outlined">
+                                @inMemoryPage.Key
+                            </MudChip>
+                        </td>
+                        <td>@inMemoryPage.Value</td>
+                        <td>
+                            @if (MemoryService.NextRequests[inMemoryPage.Key].Count > 0)
+                            {
+                                @* Highlight furthest in queue request*@
+                                <MudChip T="int"
+                                         Color="@(MemoryService.RequestQueue.TryPeek(out var delPage, out var _) && inMemoryPage.Key == delPage ? FurthestColor : Color.Inherit)"
+                                         Variant="Variant.Outlined">
+                                    @MemoryService.NextRequests[inMemoryPage.Key][0]
+                                </MudChip>
+                            }
+                            @for (var i = 1; i <MemoryService.NextRequests[inMemoryPage.Key].Count; i++)
+                            {
+                                var req = MemoryService.NextRequests[inMemoryPage.Key][i];
+                                <MudChip T="int"
+                                     Color="Color.Inherit"
+                                     Variant="Variant.Outlined">
+                                    @req
+                                </MudChip>
+                            }
+                        </td>
+                    </tr>
+                }
+
+                <tr><td colspan="3">
+                        <MudText Typo="Typo.caption">No en memoria</MudText>
+                    </td></tr>
+
+                @foreach (var inMemoryPage in MemoryService.NextRequests)
+                {
+                    if (MemoryService.PagesInFrame.ContainsKey(inMemoryPage.Key)) continue;
+
+                    <tr>
+                        <td>
+                            @*Highlight page if its the same as the previous or current request*@
+                            <MudChip T="int"
+                                     Color="@(inMemoryPage.Key == MemoryService.Requests.FirstOrDefault(-1) ? CurrentColor : inMemoryPage.Key == _previousPage ? PreviousColor : Color.Inherit)"
+                                     Variant="Variant.Filled">
+                            @inMemoryPage.Key
+                            </MudChip>
+                        </td>
+                        <td> - </td>
+                        <td>
+                            @foreach (var req in inMemoryPage.Value)
+                            {
+                                <MudChip T="int" Variant="Variant.Filled">@req</MudChip>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                
+            </MudSimpleTable>
+            
+                
+            
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+
+@code
+{
+    private readonly List<int> _requestsToLoad = new();
+    int? _pageToAdd;
+    
+    int _capacity = 5;
+
+    private void OnEnter(KeyboardEventArgs eventArgs)
+    {
+        if (eventArgs.Code is not ("Enter" or "NumpadEnter")) return;
+        
+        AddRequest();
+        _pageToAdd = null;
+    }
+    private void AddRequest()
+    {
+        if (!_pageToAdd.HasValue) return;
+        _requestsToLoad.Add(_pageToAdd.Value);
+    }
+
+    private void ChipClosed(MudChip<int> chip) => _requestsToLoad.RemoveAt(chip.Value);
+    
+    private void Load()
+    {
+        MemoryService.LoadRequests(_requestsToLoad.ToList(), _capacity);
+    }
+
+    int _previousPage = -1;
+    private void Advance()
+    {
+        _previousPage = MemoryService.Requests.FirstOrDefault(-1);
+        MemoryService.Next();
+    }
+
+    const Color PreviousColor = Color.Info;
+    const Color CurrentColor = Color.Secondary;
+    const Color FurthestColor = Color.Warning;
+
+
+
+
+}
