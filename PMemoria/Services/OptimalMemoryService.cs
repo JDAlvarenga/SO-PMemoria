@@ -38,6 +38,8 @@ public class OptimalMemoryService
         NextRequests.Clear();
         PagesInFrame.Clear();
         RequestQueue.Clear();
+        Logs.Clear();
+        
         var idx = 0;
         foreach (var request in Requests)
         {
@@ -57,12 +59,16 @@ public class OptimalMemoryService
     /// <returns>The frame in which the requested page can be accessed.</returns>
     private int RequestPage(int page)
     {
+        LogRequest(page);
+        Console.WriteLine(Logs.Count);
         // Already in memory
         if (PagesInFrame.TryGetValue(page, out var frame))
         {
             HandleRequest(page);
             return frame;
         }
+        
+        LogPageFailure(page);
         
         // Not in memory but within capacity
         if (PagesInFrame.Count < Capacity)
@@ -84,14 +90,18 @@ public class OptimalMemoryService
 
     private void RemovePage(int page)
     {
+        var frame = PagesInFrame[page];
         PagesInFrame.Remove(page);
         RequestQueue.Remove(page, out var _, out var _);
+
+        LogRemove(page, frame);
     }
 
     private void AddPage(int page, int frame)
     {
         HandleRequest(page);
         PagesInFrame.Add(page, frame);
+        LogAdd(page, frame);
     }
     
     /// <summary>
@@ -110,7 +120,23 @@ public class OptimalMemoryService
         RequestQueue.Remove(page, out var _, out var _);
         RequestQueue.Enqueue(page, nextRequest);
     }
+
+    public List<MemoryLog> Logs { get; private set; } = [];
+    private void LogRequest(int page) => Logs.Add(new MemoryLog(MemoryLogType.PageRequest, page, null));
+    private void LogAdd(int page, int frame) => Logs.Add(new MemoryLog(MemoryLogType.PageAdded, page, frame));
+    private void LogRemove(int page, int frame) => Logs.Add(new MemoryLog(MemoryLogType.PageRemoved, page, frame));
+    private void LogPageFailure(int page) => Logs.Add(new MemoryLog(MemoryLogType.PageFailure, page, null));
+
 }
+    public record MemoryLog (MemoryLogType LogType, int Page, int? Frame);
+
+    public enum MemoryLogType
+    {
+        PageRequest,
+        PageFailure,
+        PageAdded,
+        PageRemoved
+    }
 
 
 

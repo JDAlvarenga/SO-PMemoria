@@ -1,40 +1,95 @@
 ﻿@page "/"
-@inject Services.OptimalMemoryService MemoryService;
+@using PMemoria.Services
+@inject OptimalMemoryService MemoryService;
 
-<PageTitle>Paginación Memoria</PageTitle>
-<MudGrid>
-    <MudItem xs="12" sm="5" md="3">
-        <MudPaper Class="pa-4">
+<PageTitle>Memoria Óptima</PageTitle>
+<MudGrid Spacing="2">
+    <MudItem xs="12" sm="5" md="3" Style="height: 90vh">
+        <MudStack Style="height: inherit">
+            <MudPaper Class="pa-4" Style="height: 50%">
+                <MudText Typo="Typo.h5">Configuración</MudText>
 
-            <MudNumericField @bind-Value="_capacity" Label="Capacidad" Min="1" Max="50"/>
+                <MudNumericField @bind-Value="_capacity" Label="Capacidad" Min="1" Max="50"/>
 
-            <MudNumericField @bind-Value="_pageToAdd" Immediate @onkeydown="OnEnter"
-                             HideSpinButtons="true"
-                             Adornment="Adornment.End"
-                             AdornmentIcon="@Icons.Material.Filled.Add"
-                             IconSize="Size.Large"
-                             OnAdornmentClick="AddRequest"
-                             AdornmentColor="Color.Primary"
-                             Label="Agregar página"
-                             HelperText="Ingrese las páginas a solicitar a memoria"/>
-            <MudChipSet T="int" AllClosable OnClose="ChipClosed">
-                @{
-                    var idx = 0;
-                    foreach (var req in _requestsToLoad)
-                    {
-                        <MudChip Text="@(req.ToString())" Value="@(idx++)"></MudChip>
+                <MudNumericField @bind-Value="_pageToAdd" Immediate @onkeydown="OnEnter"
+                                 HideSpinButtons="true"
+                                 Adornment="Adornment.End"
+                                 AdornmentIcon="@Icons.Material.Filled.Add"
+                                 IconSize="Size.Large"
+                                 OnAdornmentClick="AddRequest"
+                                 AdornmentColor="Color.Primary"
+                                 Label="Página"
+                                 HelperText="Ingrese las páginas a solicitar a memoria"/>
+                <MudChipSet T="int" AllClosable OnClose="ChipClosed" Class="overflow-y-auto" Style="height: inherit">
+                    @{
+                        var idx = 0;
+                        foreach (var req in _requestsToLoad)
+                        {
+                            <MudChip Text="@(req.ToString())" Value="@(idx++)"></MudChip>
+                        }
                     }
-                }
-            </MudChipSet>
-            
-            <MudButton EndIcon="@Icons.Material.Filled.Start"
-                       OnClick="Load">Iniciar</MudButton>
-        </MudPaper>
+                </MudChipSet>
+                <MudStack Row="true">
+                    <MudButton EndIcon="@Icons.Material.Filled.Clear"
+                               IconColor="Color.Error"
+                               OnClick="() => _requestsToLoad.Clear()">Limpiar</MudButton>
+                    <MudSpacer/>
+
+                    <MudButton EndIcon="@Icons.Material.Filled.Start"
+                               IconColor="Color.Primary"
+                               OnClick="Load">Iniciar</MudButton>
+                </MudStack>
+
+            </MudPaper>
+
+            <MudPaper Class="pa-4" Style="height: 50%">
+                <MudText Typo="Typo.h5">Eventos</MudText>
+                <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Style="height: 100%">
+                    <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Página</th>
+                        <th>Marco de página</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    @foreach (var log in MemoryService.Logs)
+                    {
+                        <tr>
+                            <td>
+                                @switch (log.LogType)
+                                {
+                                    case MemoryLogType.PageRequest:
+                                        <MudIcon Color="Color.Default" Icon="@Icons.Material.Filled.Message" Title="Solicitud"/>
+                                        break;
+                                    case MemoryLogType.PageFailure:
+                                        <MudIcon Color="Color.Error" Icon="@Icons.Material.Filled.Error" Title="Fallo de página"/>
+                                        break;
+                                    case MemoryLogType.PageAdded:
+                                        <MudIcon Color="Color.Info" Icon="@Icons.Material.Filled.Upload" Title="Página cargada"/>
+                                        break;
+                                    case MemoryLogType.PageRemoved:
+                                        <MudIcon Color="Color.Warning" Icon="@Icons.Material.Filled.Download" Title="Página retirada"/>
+                                        break;
+                                    default:
+                                        throw new ArgumentOutOfRangeException();
+                                }
+                            </td>
+                            <td>@log.Page</td>
+                            <td>@log.Frame</td>
+                        </tr>
+                    }
+                    </tbody>
+                </MudSimpleTable>
+
+            </MudPaper>
+        </MudStack>
     </MudItem>
     
     <MudItem xs="12" sm="7" md="9">
         <MudPaper Class="pa-4">
-            <MudText Typo="Typo.h4">Siguientes</MudText>
+            <MudText Typo="Typo.h5">Pasos</MudText>
             <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal" Class="overflow-x-auto">
                 @{
                     var first = true;
@@ -50,17 +105,22 @@
                 }
 
             </MudTimeline>
-            
-            <MudSimpleTable Dense Bordered FixedHeader Style="height: 50vh">
+
+            <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Style="height: 100%">
                 <thead>
                 <tr>
                     <td colspan="3">
                         <MudToolBar>
+                            <MudButton
+                                OnClick="Advance"
+                                IconColor="Color.Primary"
+                                StartIcon="@Icons.Material.Outlined.SkipNext">Siguiente Paso</MudButton>
+                            <MudSpacer/>
 
-                            <MudIconButton OnClick="Advance"
-                                           Icon="@Icons.Material.Filled.SkipNext"
-                                           Color="Color.Primary"
-                                           Size="Size.Large"/>
+                            <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small" Color="PreviousColor">Solicitud anterior</MudChip>
+                            <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small" Color="CurrentColor">Solicitud actual</MudChip>
+                            <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small" Color="FurthestColor">Solicitud más lejana</MudChip>
+
                             <MudSpacer/>
                             <MudText Typo="Typo.caption">Capacidad: @(MemoryService.Capacity)/@(MemoryService.PagesInFrame.Count)</MudText>
                         </MudToolBar>
@@ -104,8 +164,8 @@
                             {
                                 var req = MemoryService.NextRequests[inMemoryPage.Key][i];
                                 <MudChip T="int"
-                                     Color="Color.Inherit"
-                                     Variant="Variant.Outlined">
+                                         Color="Color.Inherit"
+                                         Variant="Variant.Outlined">
                                     @req
                                 </MudChip>
                             }
@@ -114,8 +174,8 @@
                 }
 
                 <tr><td colspan="3">
-                        <MudText Typo="Typo.caption">No en memoria</MudText>
-                    </td></tr>
+                    <MudText Typo="Typo.caption">No en memoria</MudText>
+                </td></tr>
 
                 @foreach (var inMemoryPage in MemoryService.NextRequests)
                 {
@@ -127,7 +187,7 @@
                             <MudChip T="int"
                                      Color="@(inMemoryPage.Key == MemoryService.Requests.FirstOrDefault(-1) ? CurrentColor : inMemoryPage.Key == _previousPage ? PreviousColor : Color.Inherit)"
                                      Variant="Variant.Filled">
-                            @inMemoryPage.Key
+                                @inMemoryPage.Key
                             </MudChip>
                         </td>
                         <td> - </td>
@@ -140,11 +200,7 @@
                     </tr>
                 }
                 </tbody>
-                
             </MudSimpleTable>
-            
-                
-            
         </MudPaper>
     </MudItem>
 </MudGrid>
@@ -153,6 +209,7 @@
 
 @code
 {
+    // Data Load
     private readonly List<int> _requestsToLoad = new();
     int? _pageToAdd;
     
@@ -178,6 +235,8 @@
         MemoryService.LoadRequests(_requestsToLoad.ToList(), _capacity);
     }
 
+    // STATE TABLE
+    
     int _previousPage = -1;
     private void Advance()
     {
@@ -188,8 +247,6 @@
     const Color PreviousColor = Color.Info;
     const Color CurrentColor = Color.Secondary;
     const Color FurthestColor = Color.Warning;
-
-
-
+    
 
 }
