@@ -4,21 +4,23 @@
 
 <PageTitle>Memoria Óptima</PageTitle>
 <MudGrid Spacing="2">
-    <MudItem xs="12" sm="5" md="4" Style="height: 93vh">
-        <MudStack Class="justify-start">
-            <MudPaper Class="pa-4" Style="height: 40%">
-                <MudText Typo="Typo.h5">Configuración</MudText>
+    <MudItem xs="12" sm="5" md="4">
+        <MudStack StretchItems="StretchItems.End" Justify="Justify.FlexStart" Style="height: 92vh">
+            <MudPaper Class="pa-4 d-flex flex-column" Style="max-height: 40vh">
+                <div>
+                    <MudText Typo="Typo.h5">Configuración</MudText>
 
-                <MudNumericField @bind-Value="_capacity" Label="Capacidad" Min="1" Max="50"/>
+                    <MudNumericField @bind-Value="_capacity" Label="Capacidad" Min="1" Max="50"/>
 
-                <MudNumericField @bind-Value="_pageToAdd" Immediate @onkeydown="OnEnter"
-                                 HideSpinButtons="true"
-                                 Adornment="Adornment.End"
-                                 AdornmentIcon="@Icons.Material.Filled.Add"
-                                 OnAdornmentClick="AddRequest"
-                                 Label="Página"
-                                 HelperText="Ingrese las páginas a solicitar a memoria"/>
-                <MudChipSet T="int" AllClosable OnClose="ChipClosed" Class="overflow-y-auto" Style="height: inherit">
+                    <MudNumericField @bind-Value="_pageToAdd" Immediate @onkeydown="OnEnter"
+                                     HideSpinButtons="true"
+                                     Adornment="Adornment.End"
+                                     AdornmentIcon="@Icons.Material.Filled.Add"
+                                     OnAdornmentClick="AddRequest"
+                                     Label="Página"
+                                     HelperText="Ingrese las páginas a solicitar a memoria"/>
+                </div>
+                <MudChipSet T="int" AllClosable OnClose="ChipClosed" Class="overflow-y-auto">
                     @{
                         var idx = 0;
                         foreach (var req in _requestsToLoad)
@@ -38,25 +40,26 @@
                 </MudStack>
 
             </MudPaper>
+           
 
-            <MudPaper Class="pa-4" Style="height: 60%">
+            <MudPaper Class="pa-4 overflow-hidden" Style="max-height: 55vh">
                 <MudText Typo="Typo.h5">Eventos</MudText>
                 <MudStack Row="true" Justify="Justify.SpaceEvenly" Wrap="Wrap.Wrap">
-                    <MudChip T="string" Variant="Variant.Text" Color="Color.Default" Icon="@Icons.Material.Filled.Message">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Default" Icon="@Icons.Material.Filled.Message">
                         Solicitud (@(MemoryService.Logs.Count( log => log.LogType == MemoryLogType.PageRequest)))
                     </MudChip>
-                    <MudChip T="string" Variant="Variant.Text" Color="Color.Error" Icon="@Icons.Material.Filled.Error">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Error" Icon="@Icons.Material.Filled.Error">
                         Fallo de página (@(MemoryService.Logs.Count( log => log.LogType == MemoryLogType.PageFailure)))
                     </MudChip>
-                    <MudChip T="string" Variant="Variant.Text" Color="Color.Info" Icon="@Icons.Material.Filled.Upload">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Info" Icon="@Icons.Material.Filled.Upload">
                         Página cargada (@(MemoryService.Logs.Count( log => log.LogType == MemoryLogType.PageAdded)))
                     </MudChip>
-                    <MudChip T="string" Variant="Variant.Text" Color="Color.Warning" Icon="@Icons.Material.Filled.Download">
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Warning" Icon="@Icons.Material.Filled.Download">
                         Página retirada (@(MemoryService.Logs.Count( log => log.LogType == MemoryLogType.PageRemoved)))
                     </MudChip>
                     
                 </MudStack>
-                <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Style="height: 85%">
+                <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Style="height: 74%">
                     <thead>
                     <tr>
                         <th>Tipo</th>
@@ -118,11 +121,11 @@
 
             </MudTimeline>
 
-            <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Style="height: 75vh">
+            <MudSimpleTable Dense="true" Bordered="true" FixedHeader="true" Class="overflow-x-auto" Style="height: 75vh">
                 <thead>
                 <tr>
                     <td colspan="3">
-                        <MudToolBar>
+                        <MudToolBar WrapContent="true">
                             <MudButton
                                 OnClick="Advance"
                                 IconColor="Color.Primary"
@@ -134,7 +137,7 @@
                             <MudChip T="string" Variant="Variant.Outlined" Size="Size.Small" Color="FurthestColor">Solicitud más lejana</MudChip>
 
                             <MudSpacer/>
-                            <MudText Typo="Typo.caption">Capacidad: @(MemoryService.Capacity)/@(MemoryService.PagesInFrame.Count)</MudText>
+                            <MudText Typo="Typo.caption">Capacidad: @(MemoryService.PagesInFrame.Count)/@(MemoryService.Capacity)</MudText>
                         </MudToolBar>
 
                     </td>
