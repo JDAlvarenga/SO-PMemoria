@@ -33,6 +33,6 @@ Para el control de las asignaciones se mantiene:
 - Un diccionario de todas las páginas. Este contiene todas las ocurrencias de la página en la lista (su índice).
 - Una cola de prioridad (max heap) en donde se mantienen las páginas alojadas en memoria, ordenadas de acuerdo al índice de la lista más próximo en un momento dado.
 
-Esto se hace para lograr asignaciones de memoria en tiempo constante.
+Esto se hace para lograr asignaciones de memoria en el menor tiempo posible. 
 
 
